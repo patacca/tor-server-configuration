@@ -7,7 +7,7 @@
 COMMIT
 
 *filter
-:INPUT DROP [19:1024]
+:INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT DROP [0:0]
 :drop-and-log-it - [0:0]
