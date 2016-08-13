@@ -110,5 +110,8 @@ COMMIT
 -A tcp_packets -p tcp -m tcp --dport 9001 -j ACCEPT
 -A tcp_packets -p tcp -m tcp --dport 9030 -j ACCEPT
 
+## Allows udp packets
+-A udp_packets -j ACCEPT
+
 COMMIT
 
