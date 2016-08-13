@@ -23,6 +23,24 @@
 ## Allows any related traffic coming back to the server
 -A INPUT -d 173.208.213.114/32 -m state --state RELATED,ESTABLISHED -j ACCEPT
 
+## Drop INVALID packets
+-A INPUT -m conntrack --ctstate INVALID -j DROP
+-A INPUT -m state --state INVALID -j DROP
+
+## Drop invalid SYN packets
+-A INPUT -p tcp --tcp-flags ALL ACK,RST,SYN,FIN -j DROP
+-A INPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+-A INPUT -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+
+## Drop packets with incoming fragments. This attack once resulted in kernel panics
+-A INPUT -f -j DROP
+
+## Drop incoming malformed XMAS packets
+-A INPUT -p tcp --tcp-flags ALL ALL -j DROP
+
+## Drop incoming malformed NULL packets
+-A INPUT -p tcp --tcp-flags ALL NONE -j DROP
+
 -A INPUT -i eth0 -p tcp -j tcp_packets
 -A INPUT -i eth0 -p udp -j udp_packets
 -A INPUT -i eth0 -p icmp -j icmp_packets
@@ -44,8 +62,28 @@
 #         already flushed and set to a default policy of DROP.
 #
 
-## Allows loopback interface and everything coming from our ip
+## Allows loopback interface
 -A OUTPUT -o lo -j ACCEPT
+
+## https://lists.torproject.org/pipermail/tor-talk/2014-March/032507.html
+-A OUTPUT -m conntrack --ctstate INVALID -j REJECT --reject-with icmp-admin-prohibited
+-A OUTPUT -m state --state INVALID -j REJECT --reject-with icmp-admin-prohibited
+
+## Drop invalid SYN packets
+-A OUTPUT -p tcp --tcp-flags ALL ACK,RST,SYN,FIN -j REJECT --reject-with icmp-admin-prohibited
+-A OUTPUT -p tcp --tcp-flags SYN,FIN SYN,FIN -j REJECT --reject-with icmp-admin-prohibited
+-A OUTPUT -p tcp --tcp-flags SYN,RST, SYN,RST -j REJECT --reject-with icmp-admin-prohibited
+
+## Drop packets with incoming fragments. This attack once resulted in kernel panics
+-A OUTPUT -f -j REJECT --reject-with icmp-admin-prohibited
+
+## Drop incoming malformed XMAS packets
+-A OUTPUT -p tcp --tcp-flags ALL ALL -j REJECT --reject-with icmp-admin-prohibited
+
+## Drop incoming malformed NULL packets
+-A OUTPUT -p tcp --tcp-flags ALL NONE -j REJECT --reject-with icmp-admin-prohibited
+
+## Allows everything coming from our ip
 -A OUTPUT -s 173.208.213.114/32 -j ACCEPT
 
 ## Logs weird packets that don't match the above
