@@ -1,0 +1,75 @@
+*raw
+-A PREROUTING -j NOTRACK
+-A OUTPUT -j NOTRACK
+
+*filter
+:INPUT DROP [19:1024]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+:drop-and-log-it - [0:0]
+:icmp_packets - [0:0]
+:tcp_packets - [0:0]
+:udp_packets - [0:0]
+
+
+#######################################################################
+# INPUT: Incoming traffic from various interfaces.  All rulesets are
+#        already flushed and set to a default policy of DROP.
+#
+
+## Allows all loopback (lo0) traffic and drop all traffic to 127/8 that doesn't use lo0
+-A INPUT -i lo -j ACCEPT
+
+## Allows any related traffic coming back to the server
+-A INPUT -d 173.208.213.114/32 -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+-A INPUT -i eth0 -p tcp -j tcp_packets
+-A INPUT -i eth0 -p udp -j udp_packets
+-A INPUT -i eth0 -p icmp -j icmp_packets
+
+## Logs weird packets that don't match the above
+#-A INPUT -j LOG --log-level debug --log-prefix "IPT INPUT packet died: "
+
+
+#######################################################################
+# FORWARD: Disabled by default.
+#
+
+## Logs forwarded packets
+-A FORWARD -j LOG --log-prefix "IPT FORWARD packet died: " --log-level 7
+
+
+#######################################################################
+# OUTPUT: Outgoing traffic from various interfaces.  All rulesets are
+#         already flushed and set to a default policy of DROP.
+#
+
+## Allows loopback interface and everything coming from our ip
+-A OUTPUT -o lo -j ACCEPT
+-A OUTPUT -s 173.208.213.114/32 -j ACCEPT
+
+## Logs weird packets that don't match the above
+-A OUTPUT -j LOG --log-prefix "IPT OUTPUT packet died: " --log-level 7
+
+
+## DROP chain
+-A drop-and-log-it -j LOG --log-level 6
+-A drop-and-log-it -j REJECT --reject-with icmp-port-unreachable
+
+## Allow several ICMP types 
+## http://www.oregontechsupport.com/articles/icmp.txt
+-A icmp_packets -p icmp -m icmp --icmp-type host-unreachable -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type port-unreachable -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type fragmentation-needed -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type source-quench -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type echo-reply -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type echo-request -m limit --limit 5/sec -j ACCEPT
+-A icmp_packets -p icmp -m icmp --icmp-type echo-request -j DROP
+
+## Allows ssh, ORPort and DirPort
+-A tcp_packets -p tcp -m tcp --dport 22 -j ACCEPT
+-A tcp_packets -p tcp -m tcp --dport 9001 -j ACCEPT
+-A tcp_packets -p tcp -m tcp --dport 9030 -j ACCEPT
+
+COMMIT
+
