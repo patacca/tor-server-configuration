@@ -1,8 +1,8 @@
 *raw
--A PREROUTING -d 173.208.213.114 -p tcp --dport 22,9001,9030 -j NOTRACK
--A PREROUTING -i lo -o lo -j NOTRACK
--A OUTPUT -s 173.208.213.114 -p tcp --sport 22,9001,9030 -j NOTRACK
--A OUTPUT -i lo -o lo -j NOTRACK
+-A PREROUTING -d 173.208.213.114 -p tcp -m multiport --dport 22,9001,9030 -j NOTRACK
+-A PREROUTING -i lo -j NOTRACK
+-A OUTPUT -s 173.208.213.114 -p tcp -m multiport --sport 22,9001,9030 -j NOTRACK
+-A OUTPUT -o lo -j NOTRACK
 
 COMMIT
 
